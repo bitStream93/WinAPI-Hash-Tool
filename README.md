@@ -11,8 +11,8 @@ Command line utility for generating DJB2 hashes of Windows API functions. Suppor
 ## Building
 
 ```bash
-git clone https://github.com/bitStream93/WIndows-API-Hasher.git
-cd windows-api-hasher
+git clone https://github.com/bitStream93/WinAPI-Hash-Tool.git
+cd WinAPI-Hash-Tool
 mkdir build && cd build
 cmake ..
 cmake --build . --config Release
