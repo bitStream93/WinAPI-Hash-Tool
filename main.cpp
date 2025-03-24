@@ -190,7 +190,7 @@ GetCustomDlls(const std::vector<std::string> &dll_names) {
     std::filesystem::path dll_path =
         std::filesystem::path(system_dir) / dll_name;
     bool found = false;
-    if (std::filesystem::exists(dll_path)) {
+    if (exists(dll_path)) {
       dlls.push_back(dll_path.string());
       found = true;
     } else {
@@ -370,6 +370,30 @@ bool SaveToStructHeader(const std::vector<ApiFunction> &functions,
   }
   file << "#pragma once\n\n";
   file << "#include <cstdint>\n\n";
+
+  file << "auto hash(uint32_t hash, char* output) -> void {\n";
+  file << "  auto current = 5381u;\n";
+  file << "  auto outputIndex = 0;\n";
+  file << "  \n";
+  file << "  for (auto pos = 0; pos < 4; ++pos) {\n";
+  file << "    auto found = false;\n";
+  file << "    for (auto c = 32; c < 127; ++c) {\n";
+  file << "      auto next = ((current << 5) + current) + static_cast<uint32_t>(c);\n";
+  file << "      auto mask = 0xFFu << (8 * (3 - pos));\n";
+  file << "      if ((next & mask) == (hash & mask)) {\n";
+  file << "        output[outputIndex++] = static_cast<char>(c);\n";
+  file << "        current = next;\n";
+  file << "        found = true;\n";
+  file << "        break;\n";
+  file << "      }\n";
+  file << "    }\n";
+  file << "    if (!found) {\n";
+  file << "      output[outputIndex++] = '?';\n";
+  file << "    }\n";
+  file << "  }\n";
+  file << "  output[outputIndex] = '\\0';\n";
+  file << "}\n\n";
+
   file << "struct ApiHash {\n";
   file << "    const char* name;\n";
   file << "    const char* dll;\n";
@@ -405,9 +429,32 @@ bool SaveToDefineHeader(const std::vector<ApiFunction> &functions,
     ResetConsoleColor();
     return false;
   }
-  file << "#pragma once\n\n";
+  file << "#pragma once\n";
+  file << "#include <stdint.h>\n\n";
   file << "// Windows API Functions - djb2 Hash\n";
   file << "// Automatically generated - Do not modify\n\n";
+
+  file << "void hash(uint32_t hash, char* output) {\n";
+  file << "  uint32_t current = 5381;\n";
+  file << "  int outputIndex = 0;\n";
+  file << "  for (int pos = 0; pos < 4; pos++) {\n";
+  file << "    int found = 0;\n";
+  file << "    for (int c = 32; c < 127; c++) {\n";
+  file << "      uint32_t next = ((current << 5) + current) + c;\n";
+  file << "      uint32_t mask = 0xFF << (8 * (3 - pos));\n";
+  file << "      if ((next & mask) == (hash & mask)) {\n";
+  file << "        output[outputIndex++] = c;\n";
+  file << "        current = next;\n";
+  file << "        found = 1;\n";
+  file << "        break;\n";
+  file << "      }\n";
+  file << "    }\n";
+  file << "    if (!found) {\n";
+  file << "      output[outputIndex++] = '?';\n";
+  file << "    }\n";
+  file << "  }\n";
+  file << "  output[outputIndex] = '\\0';\n";
+  file << "}\n\n";
 
   std::ios state(nullptr);
   state.copyfmt(file);
